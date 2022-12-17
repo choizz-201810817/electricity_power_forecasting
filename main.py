@@ -127,8 +127,8 @@ sns.lineplot(df, x='hour', y='zone 1 power consumption', hue='dayname', ci=None)
 # 상관관계 파악
 # hour와 temperature가 타겟값과 상관계수가 높음..
 df1 = df[['temperature', 'humidity_grade', 'wind speed', 'general diffuse flows', 'diffuse flows', 'zone 1 power consumption', 'month', 'hour']]
-mask = np.zeros_like(df1, dtype=bool)
-mask[np.triu_indices_from(mask)] = True
+# mask = np.zeros_like(df1, dtype=bool)
+# mask[np.triu_indices_from(mask)] = True
 
 sns.heatmap(df1.corr(), linewidths=0.5)
 # %%
@@ -142,7 +142,7 @@ for i, col in enumerate(cols):
 # 스케일링
 # datetime, year, qcut -> 제거
 # dayname, cut(grade) -> onehot encoding
-df = df.drop(['datetime', 'year', 'humidity_qcut', 'humidity_cut', 'humidity_grade_q'], axis=1)
+df = df.drop(['datetime', 'year', 'humidity_grade_q'], axis=1)
 
 # %%
 df = pd.concat([df, pd.get_dummies(df.dayname)], axis=1).drop(['dayname'], axis=1)
@@ -151,9 +151,67 @@ df = pd.concat([df, pd.get_dummies(df.humidity_grade)], axis=1).drop(['humidity_
 #%%
 from sklearn.preprocessing import MinMaxScaler
 
-df2 = pd.concat([df.iloc[:,:5], df.iloc[:,6:]], axis=1)
+df2 = pd.concat([df.iloc[:,:5], df.iloc[:,6:-12]], axis=1)
 mm_sc = MinMaxScaler()
-mm_df = pd.concat([pd.DataFrame(mm_sc.fit_transform(df2), columns=df2.columns), df['zone 1 power consumption']], axis=1)
-# %%
+mm_df = pd.DataFrame(mm_sc.fit_transform(df2), columns=df2.columns)
+mm_df1 = pd.concat([mm_df,df.iloc[:,9:]], axis=1)
+mm_df2 = pd.concat([mm_df1,df['zone 1 power consumption']], axis=1)
 
+#%%
+mm_df2.rename(columns={1:'grade_1',
+                       2:'grade_2',
+                       3:'grade_3',
+                       4:'grade_4',
+                       5:'grade_5'}, inplace=True)
+
+# %%
+# 데이터 정의
+from sklearn.model_selection import train_test_split
+
+X = mm_df2.iloc[:,:-1]
+y = mm_df2.iloc[:,-1]
+
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=.25, random_state=42)
+print(X_train.shape)
+print(X_test.shape)
+print(y_train.shape)
+print(y_test.shape)
+
+# %%
+# 모델 정의
+from sklearn.ensemble import RandomForestRegressor
+from sklearn.linear_model import LinearRegression
+from xgboost import XGBRegressor
+from lightgbm import LGBMRegressor
+
+from sklearn.metrics import mean_squared_error, r2_score
+
+def rmse(y_test, pred):
+    return np.sqrt(mean_squared_error(y_test, pred))
+
+rf_rg = RandomForestRegressor()
+ln_rg = LinearRegression()
+xgb_rg = XGBRegressor()
+lgb_rg = LGBMRegressor()
+
+algos = [rf_rg, ln_rg, xgb_rg, lgb_rg]
+
+for algo in algos:
+    algo.fit(X_train, y_train)
+
+    trainPred = algo.predict(X_train)
+    trainRmse = rmse(y_train, trainPred)
+    trainR2 = r2_score(y_train, trainPred)
+    
+    testPred = algo.predict(X_test)
+    testRmse = rmse(y_test, testPred)
+    testR2 = r2_score(y_test, testPred)
+
+    print(f"{algo.__class__.__name__}'s train rmse : {trainRmse}")
+    print(f"{algo.__class__.__name__}'s test rmse : {testRmse}")
+    print(f"{algo.__class__.__name__}'s train r2 score : {trainR2}")
+    print(f"{algo.__class__.__name__}'s test r2 score : {testR2}\n\n")
+
+# %%
+X_train
 # %%
