@@ -1,19 +1,19 @@
 #%%
+# import plotly.graph_objects as go
+# from plotly.subplots import make_subplots
+# from plotly import express as px
+
 import pandas as pd
 import numpy as np
 
 from mysqlModule import df2table, table2df
 from preproModule import createPrepReport, makeDateTime, column2cut
 from visuModule import makeChart
-from mlModeDefine import rmse, trainTestAlgo
+from mlModeDefine import trainTestAlgo, learningCurveDraw
 
 import matplotlib as mlp
 import matplotlib.pyplot as plt
 import seaborn as sns
-
-import plotly.graph_objects as go
-from plotly.subplots import make_subplots
-from plotly import express as px
 
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.ensemble import RandomForestRegressor
@@ -22,7 +22,6 @@ from xgboost import XGBRegressor
 from lightgbm import LGBMRegressor
 
 from sklearn.model_selection import train_test_split
-from sklearn.metrics import mean_squared_error, r2_score
 
 import warnings
 warnings.filterwarnings('ignore')
@@ -34,14 +33,14 @@ powercompDf = pd.read_csv('data\powercomp.csv')
 proc_dataDf = pd.read_csv('data\proc_data.csv')
 
 # # DataFrame을 mysql의 electricitydb에 table로 넣기
-# df2table(powercompDf, 'root', '949700', 'electricitydb', 'powercomp')
-# df2table(proc_dataDf, 'root', '949700', 'electricitydb', 'procdata')
+# df2table(powercompDf, 'root', '?', 'electricitydb', 'powercomp')
+# df2table(proc_dataDf, 'root', '?', 'electricitydb', 'procdata')
 
 
 # %%
 # mySql 연동하여 table을 dataframe으로 가져오기
-powercompDf = table2df('root', '949700', 'electricitydb', 'powercomp')
-proc_dataDf = table2df('root', '949700', 'electricitydb', 'procdata')
+powercompDf = table2df('root', '?', 'electricitydb', 'powercomp')
+proc_dataDf = table2df('root', '?', 'electricitydb', 'procdata')
 
 print(powercompDf.shape)
 print(proc_dataDf.shape)
@@ -187,3 +186,9 @@ for algo in algos:
 
 
 # %%
+# 각 모델별 learning curve 그려보기
+plt.figure(figsize=(20,20))
+for i, algo in enumerate(algos):
+    plt.subplot(2,2,i+1)
+    learningCurveDraw(algo, X_train, y_train, 1.0, 10)
+
