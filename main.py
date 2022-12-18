@@ -9,7 +9,7 @@ import numpy as np
 from mysqlModule import df2table, table2df
 from preproModule import createPrepReport, makeDateTime, column2cut
 from visuModule import makeChart
-from mlModeDefine import trainTestAlgo, learningCurveDraw
+from mlModelFitVis import trainTestAlgo, learningCurveDraw
 
 import matplotlib as mlp
 import matplotlib.pyplot as plt
